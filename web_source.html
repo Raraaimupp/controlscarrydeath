@@ -1,546 +1,217 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SYSTEM AMPAS - MATRIX</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background-color: #000000;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Courier New', monospace;
-            padding: 8px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Canvas untuk matrix effect */
-        #matrixCanvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            opacity: 0.4;
-            pointer-events: none;
-        }
-
-        /* Efek glitch overlay */
-        .glitch-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: repeating-linear-gradient(0deg, 
-                rgba(0, 255, 0, 0.03) 0px, 
-                rgba(0, 0, 0, 0.3) 1px, 
-                transparent 2px,
-                transparent 4px);
-            pointer-events: none;
-            z-index: 2;
-            animation: scan 10s linear infinite;
-        }
-
-        @keyframes scan {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(20px); }
-        }
-
-        /* Efek glitch random */
-        .glitch-flash {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent 50%, rgba(0,255,0,0.02) 50%);
-            background-size: 4px 100%;
-            pointer-events: none;
-            z-index: 3;
-            animation: glitchMove 0.2s infinite;
-            opacity: 0.2;
-        }
-
-        @keyframes glitchMove {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(2px); }
-            75% { transform: translateX(-2px); }
-        }
-
-        .box {
-            max-width: 500px;
-            width: 100%;
-            background-color: #0a100a;
-            border: 2px solid #2ecc2e;
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 0 50px #00ff00, inset 0 0 20px #00aa00;
-            position: relative;
-            z-index: 10;
-            backdrop-filter: blur(1px);
-            animation: boxFlicker 5s infinite;
-        }
-
-        @keyframes boxFlicker {
-            0%, 100% { opacity: 0.95; }
-            92% { opacity: 0.95; }
-            93% { opacity: 0.7; }
-            94% { opacity: 0.95; }
-            95% { opacity: 0.5; }
-            96% { opacity: 0.95; }
-        }
-
-        .box::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(rgba(0,255,0,0.07) 50%, rgba(0,0,0,0.1) 50%);
-            background-size: 100% 4px;
-            border-radius: 12px;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .domain {
-            color: #2ecc2e;
-            font-size: 14px;
-            border-bottom: 1px dashed #2ecc2e;
-            padding-bottom: 6px;
-            margin-bottom: 10px;
-            text-shadow: 0 0 8px #0f0;
-            position: relative;
-            overflow: hidden;
-            animation: typing 3s steps(30);
-            white-space: nowrap;
-        }
-
-        @keyframes typing {
-            from { width: 0; }
-            to { width: 100%; }
-        }
-
-        .title {
-            font-size: 28px;
-            font-weight: 700;
-            color: #ff4444;
-            text-shadow: 0 0 20px #f00, 0 0 40px #f00;
-            line-height: 1.1;
-            position: relative;
-            animation: glitchText 3s infinite;
-        }
-
-        @keyframes glitchText {
-            0%, 100% { transform: skew(0deg, 0deg); text-shadow: 0 0 20px #f00; }
-            95% { transform: skew(3deg, 1deg); text-shadow: -3px 0 #0ff, 3px 0 #f00; }
-            96% { transform: skew(-3deg, -1deg); text-shadow: 3px 0 #0ff, -3px 0 #f00; }
-        }
-
-        .sub {
-            font-size: 18px;
-            color: #2ecc2e;
-            margin: 4px 0 12px;
-            border-left: 3px solid #2ecc2e;
-            padding-left: 10px;
-            text-shadow: 0 0 10px #0f0;
-            animation: blink 2s infinite;
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-
-        .anon {
-            font-size: 20px;
-            color: #2ecc2e;
-            text-align: center;
-            margin: 10px 0;
-            font-weight: 600;
-            text-shadow: 0 0 20px #0f0;
-            animation: glowPulse 2s ease-in-out infinite;
-        }
-
-        @keyframes glowPulse {
-            0%, 100% { text-shadow: 0 0 15px #0f0; }
-            50% { text-shadow: 0 0 35px #0f0, 0 0 50px #0f0; }
-        }
-
-        .info {
-            background: #0a150a;
-            border: 1px solid #2ecc2e;
-            border-radius: 8px;
-            padding: 12px;
-            margin: 12px 0;
-            box-shadow: inset 0 0 20px #0f0, 0 0 15px #0f0;
-            position: relative;
-        }
-
-        .row {
-            display: flex;
-            align-items: baseline;
-            font-size: 14px;
-            margin-bottom: 8px;
-            color: #adffad;
-            border-bottom: 1px dotted #2ecc2e;
-            padding-bottom: 5px;
-            position: relative;
-            transition: 0.2s;
-        }
-
-        .row:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
-
-        .row:hover {
-            background: rgba(0,255,0,0.15);
-            transform: translateX(2px);
-        }
-
-        .tag {
-            color: #2ecc2e;
-            min-width: 70px;
-            font-weight: 600;
-            text-shadow: 0 0 8px #0f0;
-        }
-
-        .isi {
-            color: #ffaa66;
-            background: #102010;
-            padding: 2px 10px;
-            border-radius: 16px;
-            margin-left: 8px;
-            font-size: 13px;
-            border: 1px solid #2ecc2e;
-            box-shadow: 0 0 12px #0f0;
-            animation: borderPulse 2s infinite;
-        }
-
-        @keyframes borderPulse {
-            0%, 100% { border-color: #2ecc2e; box-shadow: 0 0 12px #0f0; }
-            50% { border-color: #00ff00; box-shadow: 0 0 25px #0f0; }
-        }
-
-        .isi.merah {
-            color: #ff8a8a;
-            border-color: #ff4444;
-            box-shadow: 0 0 15px #f00;
-            animation: borderPulseRed 2s infinite;
-        }
-
-        @keyframes borderPulseRed {
-            0%, 100% { border-color: #ff4444; box-shadow: 0 0 15px #f00; }
-            50% { border-color: #ff0000; box-shadow: 0 0 30px #f00; }
-        }
-
-        .alert {
-            background: #1a0f0f;
-            border: 2px solid #ff4444;
-            border-radius: 30px;
-            padding: 12px;
-            margin: 15px 0;
-            text-align: center;
-            box-shadow: 0 0 40px #f00, inset 0 0 20px #f00;
-            animation: alertGlow 1.5s infinite;
-        }
-
-        @keyframes alertGlow {
-            0%, 100% { border-color: #ff4444; box-shadow: 0 0 40px #f00; }
-            50% { border-color: #ff8888; box-shadow: 0 0 70px #f00; }
-        }
-
-        .alert-title {
-            font-size: 20px;
-            font-weight: 700;
-            color: #ff6b6b;
-            text-shadow: 0 0 30px #f00, 0 0 60px #f00;
-            margin-bottom: 6px;
-            animation: titleShake 0.5s infinite;
-        }
-
-        @keyframes titleShake {
-            0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
-            20%, 40%, 60%, 80% { transform: translateX(2px); }
-        }
-
-        .alert-text {
-            color: #ffc1c1;
-            font-size: 14px;
-            line-height: 1.8;
-            text-shadow: 0 0 5px #f00;
-        }
-
-        .list {
-            margin-top: 15px;
-        }
-
-        .item {
-            color: #a5f0a5;
-            font-size: 14px;
-            margin-bottom: 6px;
-            border-left: 3px solid #2ecc2e;
-            padding-left: 12px;
-            background: linear-gradient(90deg, #102010, transparent);
-            position: relative;
-            overflow: hidden;
-            animation: slideIn 0.5s ease-out;
-            text-shadow: 0 0 8px #0f0;
-            transition: 0.2s;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(-30px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        .item:hover {
-            background: #1a3a1a;
-            border-left-width: 6px;
-            transform: scale(1.02);
-        }
-
-        .cursor {
-            display: inline-block;
-            width: 8px;
-            height: 14px;
-            background-color: #0f0;
-            margin-left: 5px;
-            animation: cursorBlink 1s infinite;
-            box-shadow: 0 0 10px #0f0;
-        }
-
-        @keyframes cursorBlink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
-        }
-
-        .command-line {
-            color: #2ecc2e;
-            font-size: 11px;
-            margin-top: 12px;
-            border-top: 1px dashed #2ecc2e;
-            padding-top: 8px;
-            text-align: right;
-            text-shadow: 0 0 5px #0f0;
-            animation: commandPulse 3s infinite;
-        }
-
-        @keyframes commandPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SYSTEM - MATRIX</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      background:#000;min-height:100vh;display:flex;align-items:center;justify-content:center;
+      font-family:'Courier New', monospace;padding:8px;position:relative;overflow:hidden
+    }
+    #matrixCanvas{
+      position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;opacity:.4;pointer-events:none
+    }
+    .glitch-overlay{
+      position:fixed;top:0;left:0;width:100%;height:100%;
+      background:repeating-linear-gradient(0deg,rgba(0,255,0,.03) 0px,rgba(0,0,0,.3) 1px,transparent 2px,transparent 4px);
+      pointer-events:none;z-index:2;animation:scan 10s linear infinite
+    }
+    @keyframes scan{0%{transform:translateY(0)}100%{transform:translateY(20px)}}
+    .glitch-flash{
+      position:fixed;top:0;left:0;width:100%;height:100%;
+      background:linear-gradient(90deg,transparent 50%,rgba(0,255,0,.02) 50%);
+      background-size:4px 100%;
+      pointer-events:none;z-index:3;animation:glitchMove .2s infinite;opacity:.2
+    }
+    @keyframes glitchMove{0%,100%{transform:translateX(0)}25%{transform:translateX(2px)}75%{transform:translateX(-2px)}}
+    .box{
+      max-width:500px;width:100%;background:#0a100a;border:2px solid #2ecc2e;padding:15px;border-radius:12px;
+      box-shadow:0 0 50px #0f0, inset 0 0 20px #0a0;position:relative;z-index:10;backdrop-filter:blur(1px);
+      animation:boxFlicker 5s infinite
+    }
+    @keyframes boxFlicker{
+      0%,100%{opacity:.95}92%{opacity:.95}93%{opacity:.7}94%{opacity:.95}95%{opacity:.5}96%{opacity:.95}
+    }
+    .box::after{
+      content:"";position:absolute;top:0;left:0;width:100%;height:100%;
+      background:linear-gradient(rgba(0,255,0,.07) 50%,rgba(0,0,0,.1) 50%);background-size:100% 4px;
+      border-radius:12px;pointer-events:none;z-index:1
+    }
+    .domain{
+      color:#2ecc2e;font-size:14px;border-bottom:1px dashed #2ecc2e;padding-bottom:6px;margin-bottom:10px;
+      text-shadow:0 0 8px #0f0;position:relative;overflow:hidden;animation:typing 3s steps(30);
+      white-space:nowrap
+    }
+    @keyframes typing{from{width:0}to{width:100%}}
+    .title{
+      font-size:28px;font-weight:700;color:#adffad;text-shadow:0 0 12px #0f0;line-height:1.1;position:relative;
+      animation:glitchText 3s infinite
+    }
+    @keyframes glitchText{
+      0%,100%{transform:skew(0,0);text-shadow:0 0 12px #0f0}
+      95%{transform:skew(3deg,1deg);text-shadow:-3px 0 #0ff, 3px 0 #0f0}
+      96%{transform:skew(-3deg,-1deg);text-shadow:3px 0 #0ff, -3px 0 #0f0}
+    }
+    .sub{
+      font-size:16px;color:#2ecc2e;margin:4px 0 12px;border-left:3px solid #2ecc2e;padding-left:10px;
+      text-shadow:0 0 10px #0f0;animation:blink 2s infinite
+    }
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.7}}
+    .info{
+      background:#0a150a;border:1px solid #2ecc2e;border-radius:8px;padding:12px;margin:12px 0;
+      box-shadow:inset 0 0 20px #0f0, 0 0 15px #0f0;position:relative
+    }
+    .row{
+      display:flex;align-items:baseline;font-size:14px;margin-bottom:8px;color:#adffad;border-bottom:1px dotted #2ecc2e;
+      padding-bottom:5px;position:relative;transition:.2s
+    }
+    .row:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+    .row:hover{background:rgba(0,255,0,.15);transform:translateX(2px)}
+    .tag{color:#2ecc2e;min-width:80px;font-weight:600;text-shadow:0 0 8px #0f0}
+    .isi{
+      color:#ffaa66;background:#102010;padding:2px 10px;border-radius:16px;margin-left:8px;font-size:13px;
+      border:1px solid #2ecc2e;box-shadow:0 0 12px #0f0;animation:borderPulse 2s infinite
+    }
+    @keyframes borderPulse{0%,100%{border-color:#2ecc2e;box-shadow:0 0 12px #0f0}50%{border-color:#0f0;box-shadow:0 0 25px #0f0}}
+    .list{margin-top:15px}
+    .item{
+      color:#a5f0a5;font-size:14px;margin-bottom:6px;border-left:3px solid #2ecc2e;padding-left:12px;
+      background:linear-gradient(90deg,#102010,transparent);position:relative;overflow:hidden;
+      animation:slideIn .5s ease-out;text-shadow:0 0 8px #0f0;transition:.2s
+    }
+    @keyframes slideIn{from{transform:translateX(-30px);opacity:0}to{transform:translateX(0);opacity:1}}
+    .item:hover{background:#1a3a1a;border-left-width:6px;transform:scale(1.02)}
+    .cursor{
+      display:inline-block;width:8px;height:14px;background:#0f0;margin-left:5px;animation:cursorBlink 1s infinite;
+      box-shadow:0 0 10px #0f0
+    }
+    @keyframes cursorBlink{0%,100%{opacity:1}50%{opacity:0}}
+    .command-line{
+      color:#2ecc2e;font-size:11px;margin-top:12px;border-top:1px dashed #2ecc2e;padding-top:8px;text-align:right;
+      text-shadow:0 0 5px #0f0;animation:commandPulse 3s infinite
+    }
+    @keyframes commandPulse{0%,100%{opacity:1}50%{opacity:.7}}
+  </style>
 </head>
 <body>
-    <canvas id="matrixCanvas"></canvas>
-    <div class="glitch-overlay"></div>
-    <div class="glitch-flash"></div>
+  <canvas id="matrixCanvas"></canvas>
+  <div class="glitch-overlay"></div>
+  <div class="glitch-flash"></div>
 
-    <div class="box">
-        <div class="domain">miunnst.sistems.tech<span class="cursor"></span></div>
-        <div class="title">SYSTEM AMPAS</div>
-        <div class="sub">DEFACE BY ANONYMOUS</div>
-        <div class="anon">ANONYMOUS</div>
+  <div class="box">
+    <div class="domain">system.panel.local<span class="cursor"></span></div>
+    <div class="title">SYSTEM - MATRIX</div>
+    <div class="sub">UI THEME ENABLED</div>
 
-        <div class="info">
-            <div class="row"><span class="tag">SERVER :</span><span class="isi">TAMVAN</span></div>
-            <div class="row"><span class="tag">STATUS :</span><span class="isi merah">AMPAS PARAH</span></div>
-            <div class="row"><span class="tag">DATA :</span><span class="isi">DIHAPUS SEMUA</span></div>
-            <div class="row"><span class="tag">BACKUP :</span><span class="isi">0 BYTE</span></div>
-            <div class="row"><span class="tag">SECURITY :</span><span class="isi">0%</span></div>
-        </div>
-
-        <div class="alert">
-            <div class="alert-title">⚠️ SYSTEM AMPAS TOTAL ⚠️</div>
-            <div class="alert-text">
-                KAMI ANONYMOUS<br>
-                KAMI TIDAK MEMBAIKKAN<br>
-                KAMI TIDAK MELUPAKAN<br>
-                TUNGGU KAMI
-            </div>
-        </div>
-
-        <div class="list">
-            <div class="item">- SUBTITULO VERIFICATION</div>
-            <div class="item">- TESTER AMPAS EDITOR</div>
-            <div class="item">- DESENVOLVE GAME</div>
-            <div class="item">- ANONYMOUS REVIEW</div>
-        </div>
-        
-        <div class="command-line">
-            root@anonymous:~# rm -rf / --no-preserve-root <span class="cursor"></span>
-        </div>
+    <div class="info">
+      <div class="row"><span class="tag">SERVER :</span><span class="isi">ONLINE</span></div>
+      <div class="row"><span class="tag">STATUS :</span><span class="isi">RUNNING</span></div>
+      <div class="row"><span class="tag">SECURITY :</span><span class="isi">ACTIVE</span></div>
+      <div class="row"><span class="tag">MODE :</span><span class="isi">MATRIX</span></div>
     </div>
 
-    <script>
-        // Matrix effect dengan huruf jatuh yang banyak
-        const canvas = document.getElementById('matrixCanvas');
-        const ctx = canvas.getContext('2d');
+    <div class="list">
+      <div class="item">- Visual: Matrix Rain</div>
+      <div class="item">- Overlay: Scanlines</div>
+      <div class="item">- Effect: Glitch</div>
+      <div class="item">- Theme: Dark Terminal</div>
+    </div>
 
-        // Set canvas size
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+    <div class="command-line">
+      root@panel:~# echo "theme enabled" <span class="cursor"></span>
+    </div>
+  </div>
 
-        // Karakter matrix (huruf, angka, simbol)
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%^&*()_+{}[]|;:,.<>?/\\~`';
-        const charsArray = chars.split('');
-        
-        // Ukuran kolom
-        const fontSize = 14;
-        const columns = canvas.width / fontSize;
-        
-        // Array untuk menyimpan posisi Y setiap kolom
-        const drops = [];
-        
-        // Inisialisasi drops (posisi Y acak)
-        for (let i = 0; i < columns; i++) {
-            drops[i] = Math.random() * -100; // Mulai dari atas dengan offset random
+  <script>
+    const canvas = document.getElementById('matrixCanvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // NOTE: backtick (\`) dihapus biar aman di template literal JS
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%^&*()_+{}[]|;:,.<>?/\\\\~';
+    const charsArray = chars.split('');
+
+    const fontSize = 14;
+    const columns = canvas.width / fontSize;
+
+    const drops = [];
+    for (let i = 0; i < columns; i++) drops[i] = Math.random() * -100;
+
+    const speeds = [];
+    for (let i = 0; i < columns; i++) speeds[i] = 0.5 + Math.random() * 3;
+
+    const columnChars = [];
+    for (let i = 0; i < columns; i++) {
+      columnChars[i] = [];
+      for (let j = 0; j < 20; j++) {
+        columnChars[i][j] = charsArray[Math.floor(Math.random() * charsArray.length)];
+      }
+    }
+
+    function drawMatrix() {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.font = fontSize + 'px monospace';
+
+      for (let i = 0; i < drops.length; i++) {
+        for (let j = 0; j < 6; j++) {
+          const y = drops[i] - j * fontSize;
+          if (y > 0 && y < canvas.height) {
+            const ch = columnChars[i][Math.floor(Math.random() * columnChars[i].length)];
+            if (j === 0) { ctx.fillStyle = '#afffaf'; ctx.shadowBlur = 15; ctx.shadowColor = '#0f0'; }
+            else if (j === 1) { ctx.fillStyle = '#7fff7f'; ctx.shadowBlur = 10; }
+            else if (j === 2) { ctx.fillStyle = '#3fbf3f'; ctx.shadowBlur = 5; }
+            else { ctx.fillStyle = '#1f7f1f'; ctx.shadowBlur = 2; }
+            ctx.fillText(ch, i * fontSize, y);
+            ctx.shadowBlur = 0;
+          }
         }
 
-        // Array untuk kecepatan tiap kolom
-        const speeds = [];
-        for (let i = 0; i < columns; i++) {
-            speeds[i] = 0.5 + Math.random() * 3; // Kecepatan random
+        drops[i] += speeds[i];
+        if (drops[i] > canvas.height + 100) {
+          drops[i] = Math.random() * -200;
+          speeds[i] = 0.5 + Math.random() * 3;
         }
+        if (Math.random() < 0.001) drops[i] = Math.random() * -300;
+      }
+      requestAnimationFrame(drawMatrix);
+    }
+    drawMatrix();
 
-        // Array untuk karakter acak per kolom
-        const columnChars = [];
-        for (let i = 0; i < columns; i++) {
-            columnChars[i] = [];
-            for (let j = 0; j < 20; j++) {
-                columnChars[i][j] = charsArray[Math.floor(Math.random() * charsArray.length)];
-            }
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+    setInterval(() => {
+      if (Math.random() > 0.7) {
+        document.querySelector('.glitch-flash').style.opacity = '0.4';
+        setTimeout(() => document.querySelector('.glitch-flash').style.opacity = '0.2', 50);
+      }
+    }, 500);
+
+    setInterval(() => {
+      if (Math.random() > 0.8) {
+        const box = document.querySelector('.box');
+        box.style.transform = 'translateX(' + (Math.random() * 4 - 2) + 'px)';
+        setTimeout(() => box.style.transform = 'translateX(0)', 50);
+      }
+    }, 800);
+
+    setInterval(() => {
+      for (let i = 0; i < columnChars.length; i++) {
+        if (Math.random() > 0.9) {
+          for (let j = 0; j < columnChars[i].length; j++) {
+            columnChars[i][j] = charsArray[Math.floor(Math.random() * charsArray.length)];
+          }
         }
-
-        // Fungsi draw matrix
-        function drawMatrix() {
-            // Hitam transparan untuk efek fade
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Warna hijau matrix
-            ctx.fillStyle = '#0f0';
-            ctx.font = fontSize + 'px monospace';
-
-            // Loop setiap kolom
-            for (let i = 0; i < drops.length; i++) {
-                // Gambar beberapa karakter dalam satu kolom (efek jejak)
-                for (let j = 0; j < 6; j++) {
-                    const y = drops[i] - j * fontSize;
-                    if (y > 0 && y < canvas.height) {
-                        // Random karakter
-                        const char = columnChars[i][Math.floor(Math.random() * columnChars[i].length)];
-                        
-                        // Variasi warna (hijau terang di awal, lebih gelap di bawah)
-                        if (j === 0) {
-                            ctx.fillStyle = '#afffaf'; // Putih-hijau di paling depan
-                            ctx.shadowBlur = 15;
-                            ctx.shadowColor = '#0f0';
-                        } else if (j === 1) {
-                            ctx.fillStyle = '#7fff7f'; // Hijau terang
-                            ctx.shadowBlur = 10;
-                        } else if (j === 2) {
-                            ctx.fillStyle = '#3fbf3f'; // Hijau medium
-                            ctx.shadowBlur = 5;
-                        } else {
-                            ctx.fillStyle = '#1f7f1f'; // Hijau gelap
-                            ctx.shadowBlur = 2;
-                        }
-                        
-                        ctx.fillText(char, i * fontSize, y);
-                        
-                        // Reset shadow
-                        ctx.shadowBlur = 0;
-                    }
-                }
-
-                // Update posisi Y
-                drops[i] += speeds[i];
-
-                // Reset ke atas jika sudah melewati canvas
-                if (drops[i] > canvas.height + 100) {
-                    drops[i] = Math.random() * -200;
-                    // Random kecepatan baru
-                    speeds[i] = 0.5 + Math.random() * 3;
-                }
-
-                // Kadang-kadang reset random (efek glitch)
-                if (Math.random() < 0.001) {
-                    drops[i] = Math.random() * -300;
-                }
-            }
-            
-            requestAnimationFrame(drawMatrix);
-        }
-
-        // Mulai animasi
-        drawMatrix();
-
-        // Resize handler
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            
-            // Reinitialize drops
-            const newColumns = canvas.width / fontSize;
-            if (newColumns > drops.length) {
-                // Tambah kolom
-                for (let i = drops.length; i < newColumns; i++) {
-                    drops[i] = Math.random() * -100;
-                    speeds[i] = 0.5 + Math.random() * 3;
-                }
-            }
-        });
-
-        // Efek glitch tambahan pake JavaScript
-        setInterval(() => {
-            if (Math.random() > 0.7) {
-                document.querySelector('.glitch-flash').style.opacity = '0.4';
-                setTimeout(() => {
-                    document.querySelector('.glitch-flash').style.opacity = '0.2';
-                }, 50);
-            }
-        }, 500);
-
-        // Random glitch di box
-        setInterval(() => {
-            if (Math.random() > 0.8) {
-                const box = document.querySelector('.box');
-                box.style.transform = `translateX(${Math.random() * 4 - 2}px)`;
-                setTimeout(() => {
-                    box.style.transform = 'translateX(0)';
-                }, 50);
-            }
-        }, 800);
-
-        // Ganti karakter matrix kadang-kadang
-        setInterval(() => {
-            for (let i = 0; i < columnChars.length; i++) {
-                if (Math.random() > 0.9) {
-                    for (let j = 0; j < columnChars[i].length; j++) {
-                        columnChars[i][j] = charsArray[Math.floor(Math.random() * charsArray.length)];
-                    }
-                }
-            }
-        }, 2000);
-    </script>
+      }
+    }, 2000);
+  </script>
 </body>
 </html>
-
